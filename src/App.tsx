@@ -1,6 +1,9 @@
-import { use, useEffect, useState } from 'react'
-import { getAllPokemon, getPokemonById } from './pokeApi/services'
+import { useEffect, useState } from 'react'
+import { getPokemonById } from './pokeApi/services'
 import { getCatchRate, getGenderRate } from './tyradex/services';
+import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { dataStorage } from './storage/datastorage';
+
 import './App.css'
 
 interface Pokemon {
@@ -10,6 +13,8 @@ interface Pokemon {
   type: [string];
   gender?: string | null;
   catchRate: number;
+  shiny?: boolean;
+  favorite?: boolean;
 }
 
 
@@ -17,10 +22,10 @@ interface Pokemon {
 function App() {
   
   const [pokemon, setPokemon] = useState<Pokemon | null>(null);
-  const [isShiny, setIsShiny] = useState<boolean | null>(null);
-  const [pokemonTeam, setPokemonTeam] = useState<Pokemon[]>([]);
+  const [pokemonTeam, setPokemonTeam] = useState<Pokemon[]>(dataStorage.loadTeam());
   const [showModal, setShowModal] = useState<boolean>(false);
   const [counter, setCounter] = useState<number>(0);
+  const [userFavorite, setUserFavorite] = useState<Pokemon[]>(dataStorage.loadFavorites());
 
   useEffect(() => {
     console.log("Counter depuis le useEffect:", counter);
@@ -37,24 +42,51 @@ function App() {
       return randomNum <= rate;
     }
 
-    function capture(pokemonRate: number, ballRate: number = 150) { //taux de capture de la safari ball de base vu qu'on est dans un safari
-      setCounter(prev => prev + 1);
-      console.log("Capture function called. Counter:", counter + 1);
-      const ball = Math.random() * ballRate;
-      if (ball <= pokemonRate) {
-        console.log('capture reussi reintialisation du compteur');
-        setCounter(0);
-        return true;
-      } else {
-        return false;
-      }
+  function capture(pokemonRate: number, ballRate: number = 150) { //taux de capture de la safari ball de base vu qu'on est dans un safari
+    setCounter(prev => prev + 1);
+    console.log("Capture function called. Counter:", counter + 1);
+    const ball = Math.random() * ballRate;
+    if (ball <= pokemonRate) {
+      console.log('capture reussi reintialisation du compteur');
+      setCounter(0);
+      return true;
+    } else {
+      return false;
     }
+  }
+
+  function isShiny(): boolean {
+    const shinyChance = 512; 
+    const randomNum = Math.floor(Math.random() * shinyChance);
+    return randomNum === 0;
+  }
+
+  function addToFavorites(pokemon: Pokemon) {
+    if(!userFavorite.some(fav => fav.name === pokemon.name)) {
+      const newFavorites = [...userFavorite, pokemon];
+      setUserFavorite(newFavorites);
+      dataStorage.saveFavorites(newFavorites);
+    } else {
+      return;
+    }
+  }
+
+  function removeFromFavorites(pokemon: Pokemon) {
+    const newFavorites = userFavorite.filter(fav => fav.name !== pokemon.name);
+    setUserFavorite(newFavorites);
+    dataStorage.saveFavorites(newFavorites);
+  }
+
 
   async function getRandomPokemon() {
     const randomId = Math.floor(Math.random() * 151) + 1;
     const pokemonData = await getPokemonById(randomId);
 
     const catch_rate = await getCatchRate(randomId);
+    const shiny = isShiny();
+    if (shiny) {
+      console.log("Un shiny est apparu !");
+    }
     const genders = await getGenderRate(randomId);
 
     let isMale: string | null = null;
@@ -70,11 +102,13 @@ function App() {
     
     const pokemon: Pokemon = {
       name: pokemonData.name,
-      img: pokemonData.sprites.front_default,
+      img: shiny ? pokemonData.sprites.front_shiny : pokemonData.sprites.front_default,
       sound: pokemonData.cries.latest,
       type: pokemonData.types.map((typeInfo: any) => typeInfo.type.name),
       catchRate: catch_rate,
       gender: isMale,
+      shiny: shiny,
+      favorite: userFavorite.some(fav => fav.name === pokemonData.name)
     };
     
     setPokemon(pokemon);
@@ -101,7 +135,11 @@ function App() {
                     setPokemonTeam(newTeam);
                     setShowModal(false);
                     console.log("Relâché:", pokemon);
-                    newTeam.length < 6 && pokemon && setPokemonTeam([...newTeam, pokemon]);
+                    if (newTeam.length < 6 && pokemon) {
+                      const finalTeam = [...newTeam, pokemon];
+                      setPokemonTeam(finalTeam);
+                      dataStorage.saveTeam(finalTeam);
+                    }
                     getRandomPokemon();
                   }}>Relâcher</button>
                 </div>
@@ -120,25 +158,43 @@ function App() {
       <div className="App">
         <div className="header">
           <h1>PokéSim</h1>
-          <button onClick={() => { getRandomPokemon(); }}>Get Random Pokémon</button>
-        </div>
-        <div className="pokemon-display">
+          <button onClick={() => { getRandomPokemon(); console.log("Random Pokémon generated"); console.log(pokemon)}}>Get Random Pokémon</button>
+        </div>          
           {pokemon && (
+
             <>
+            <div className="pokemon-display">
+              <div className="fav-btn">
+                <button 
+                  onClick={() => { 
+                    if (pokemon.favorite) {
+                      removeFromFavorites(pokemon);
+                      setPokemon({...pokemon, favorite: false});
+                    } else {
+                      addToFavorites(pokemon);
+                      setPokemon({...pokemon, favorite: true});
+                    }
+                  }}
+                  className="fav-btn"
+                >
+                  {pokemon.favorite ? <FaHeart /> : <FaRegHeart />}
+                </button>
+              </div>
               <h2>{pokemon.name}</h2>
               <img src={pokemon.img} alt={pokemon.name} />
               <p>Type: {pokemon.type.join(', ')}</p>
               <p>Catch Rate: {pokemon.catchRate}</p>
               <p>Gender: {pokemon.gender}</p>
+            </div>
             </>
           )}
-        </div>
         {(pokemon) && (
           <div className="capture-section">
             <button onClick={() => {
               if(capture(pokemon.catchRate, 150)) {
                 if (pokemonTeam.length < 6) {
                   setPokemonTeam([...pokemonTeam, pokemon]);
+                  dataStorage.saveTeam([...pokemonTeam, pokemon]);
                   getRandomPokemon();
                 } else{
                   setShowModal(true);

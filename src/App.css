@@ -276,6 +276,34 @@ button:active:not(:disabled) {
   margin-top: auto;
 }
 
+.fav-btn{
+  margin-bottom: var(--spacing-md);
+}
+
+.fav-btn button {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: var(--spacing-sm);
+  min-width: auto;
+}
+
+.fav-btn button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: none;
+  box-shadow: none;
+}
+
+.fav-btn button svg {
+  color: var(--pokemon-red);
+  font-size: 1.5rem;
+  transition: all var(--transition-base);
+}
+
+.fav-btn button:hover svg {
+  transform: scale(1.1);
+}
+
 /* === POKEMON DISPLAY === */
 .pokemon-display {
   background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
