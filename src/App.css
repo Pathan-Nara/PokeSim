@@ -202,7 +202,81 @@ button:hover:not(:disabled) {
   padding: var(--spacing-xl);
   margin: var(--spacing-xl) auto;
   max-width: 500px;
+  animation: casePokeAppear 0.4s ease;
 }
+
+@keyframes casePokeAppear {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.poke-sprite {
+  animation: appear 1s;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.poke-sprite img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.poke-sprite.leaving {
+  animation: pokemonCaptured 0.5s forwards;
+}
+
+.pokeball-capture {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+  animation: pokeballShake 1.5s ease-in-out;
+}
+
+.pokeball-capture.success {
+  animation: pokeballShake 1.5s ease-in-out, pokeballSuccess 0.3s 1.5s forwards;
+}
+
+.pokeball-capture.fail {
+  animation: pokeballShake 1.5s ease-in-out, pokeballFail 0.3s 1.5s forwards;
+}
+
+@keyframes appear {
+  0% { opacity: 0; transform: scale(0.3); }
+  16% { opacity: 0.5; transform: scale(1); }
+  32% { opacity: 1; transform: translateX(-25px)}
+  48% { opacity: 1; transform: translateX(25px);}
+  64% { opacity: 1; transform: translateX(-15px);}
+  80% { opacity: 1; transform: translateX(15px);}
+  100% { opacity: 1; transform: translateX(0);}
+}
+
+@keyframes pokemonCaptured {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes pokeballShake {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg) translateY(-5px); }
+  20%, 40%, 60%, 80% { transform: rotate(10deg) translateY(-5px); }
+}
+
+@keyframes pokeballSuccess {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); filter: brightness(2); }
+  100% { opacity: 0; transform: scale(0.5); filter: brightness(0); }
+}
+
+@keyframes pokeballFail {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1) rotate(180deg); }
+  100% { opacity: 0; transform: scale(0) rotate(360deg); }
+}
+
 
 .pokemon-display h2 {
   color: var(--pokemon-yellow);
@@ -214,6 +288,50 @@ button:hover:not(:disabled) {
   width: 200px;
   height: 200px;
   margin: 0 auto var(--spacing-lg);
+}
+
+.pokemon-sprite-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto var(--spacing-lg);
+}
+
+.pokeball-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.pokeball-capture {
+  width: 100px;
+  height: 100px;
+  animation: pokeballThrow 0.5s ease-out, pokeballShake 1.5s 0.5s ease-in-out;
+}
+
+.pokeball-capture.success {
+  animation: pokeballThrow 0.5s ease-out, pokeballShake 1.5s 0.5s ease-in-out, pokeballSuccess 0.3s 2s forwards;
+}
+
+.pokeball-capture.fail {
+  animation: pokeballThrow 0.5s ease-out, pokeballShake 1.5s 0.5s ease-in-out, pokeballFail 0.3s 2s forwards;
+}
+
+@keyframes pokeballThrow {
+  0% { 
+    opacity: 0; 
+    transform: translateY(-100px) scale(0.5) rotate(-180deg);
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
 }
 
 .pokemon-display p {

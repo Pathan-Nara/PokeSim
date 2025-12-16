@@ -26,15 +26,17 @@ function App() {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [counter, setCounter] = useState<number>(0);
   const [userFavorite, setUserFavorite] = useState<Pokemon[]>(dataStorage.loadFavorites());
+  const [isCapturing, setIsCapturing] = useState<boolean>(false);
+  const [captureResult, setCaptureResult] = useState<'success' | 'fail' | null>(null);
 
   useEffect(() => {
     console.log("Counter depuis le useEffect:", counter);
-    if(counter === 3){
+    if(counter === 3 && !isCapturing){
       console.log("Compteur à 3, le pokemon s'enfuit");
       getRandomPokemon();
       setCounter(0);
     }
-  }, [counter, pokemonTeam]);
+  }, [counter, pokemonTeam, isCapturing]);
 
   function dropRate(rate: number) {
       const randomNum = Math.random() * 100;
@@ -42,11 +44,11 @@ function App() {
       return randomNum <= rate;
     }
 
-  function capture(pokemonRate: number, ballRate: number = 150) { //taux de capture de la safari ball de base vu qu'on est dans un safari
+  function capture(pokemonRate: number, ballRate: number = 150) { //le taux de capture de la safari ball est de 150 de base (comme on est dans un safari) mais bon vu que la safari ball a le meme taux de capture que la hyper ball on va mettre le taux de capture de la pokeball pour rendre le jeu plus difficile mueheheh (PS c'est la vrai formule de capture sauf que on prends pas en compte les status du pokemon, les pv et tout le tralala donc la c'est comme si on essayait de capturer un pokemon au premier lancer)
     setCounter(prev => prev + 1);
     console.log("Capture function called. Counter:", counter + 1);
     const ball = Math.random() * ballRate;
-    if (ball <= pokemonRate) {
+    if (ball <= pokemonRate) { //source : https://www.dragonflycave.com/mechanics/gen-i-capturing/
       console.log('capture reussi reintialisation du compteur');
       setCounter(0);
       return true;
@@ -181,30 +183,68 @@ function App() {
                 </button>
               </div>
               <h2>{pokemon.name}</h2>
-              <img src={pokemon.img} alt={pokemon.name} />
+              <div className="pokemon-sprite-container">
+                <div className={`poke-sprite ${isCapturing ? 'leaving' : ''}`} key={pokemon.name + pokemon.img}>
+                  <img src={pokemon.img} alt={pokemon.name} />
+                </div>
+                {isCapturing && captureResult && (
+                  <div className="pokeball-overlay">
+                    <img 
+                      src="src/assets/img/safariball.png" 
+                      alt="Pokeball" 
+                      className={`pokeball-capture ${captureResult}`}
+                    />
+                  </div>
+                )}
+              </div>
               <p>Type: {pokemon.type.join(', ')}</p>
               <p>Catch Rate: {pokemon.catchRate}</p>
               <p>Gender: {pokemon.gender}</p>
             </div>
             </>
           )}
-        {(pokemon) && (
+        {(pokemon && !isCapturing) && (
           <div className="capture-section">
-            <button onClick={() => {
-              if(capture(pokemon.catchRate, 150)) {
+            <button onClick={async () => {
+              const captureSuccess = capture(pokemon.catchRate, 150);
+              
+              
+              setIsCapturing(true);
+              await new Promise(resolve => setTimeout(resolve, 500)); 
+              
+              setCaptureResult(captureSuccess ? 'success' : 'fail');
+              await new Promise(resolve => setTimeout(resolve, 1500)); 
+              
+              if(captureSuccess) {
+                
+                await new Promise(resolve => setTimeout(resolve, 300)); 
+                
                 if (pokemonTeam.length < 6) {
                   setPokemonTeam([...pokemonTeam, pokemon]);
                   dataStorage.saveTeam([...pokemonTeam, pokemon]);
                   getRandomPokemon();
-                } else{
+                } else {
                   setShowModal(true);
                 }
               } else {
+                
+                await new Promise(resolve => setTimeout(resolve, 300)); 
                 console.log("Missed!");
+              }
+              
+              
+              setIsCapturing(false);
+              setCaptureResult(null);
+              
+              
+              if (counter === 3) {
+                getRandomPokemon();
+                setCounter(0);
               }
             }}>Capture</button>
           </div>
         )}
+
         <div className="pokemon-team-section">
           <h1>Pokemon Capturé :</h1>
           <div className="pokemon-team">
